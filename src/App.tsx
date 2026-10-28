@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import './App.css'
+const pipelineDemo: string = 123
 
 type Task = {
   id: string
