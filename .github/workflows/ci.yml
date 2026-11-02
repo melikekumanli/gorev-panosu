@@ -36,6 +36,40 @@ jobs:
 
       - name: Build application
         run: npm run build
+              - name: Build Docker image
+        run: docker build -t gorev-panosu:ci .
+
+      - name: Start container
+        run: |
+          docker run --name gorev-panosu-ci \
+            -d \
+            -p 127.0.0.1:8080:8080 \
+            gorev-panosu:ci
+
+      - name: Check container HTTP responses
+        run: |
+          curl --fail --silent --show-error \
+            --retry 10 --retry-delay 2 --retry-connrefused \
+            --connect-timeout 2 --max-time 5 \
+            http://127.0.0.1:8080/health \
+            -o /tmp/health.txt
+
+          grep -qx 'ok' /tmp/health.txt
+
+          curl --fail --silent --show-error \
+            --connect-timeout 2 --max-time 5 \
+            http://127.0.0.1:8080/ \
+            -o /tmp/index.html
+
+          grep -qi '<html' /tmp/index.html
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs gorev-panosu-ci || true
+
+      - name: Remove test container
+        if: always()
+        run: docker rm -f gorev-panosu-ci || true
 
       - name: Upload website files
         if: github.ref == 'refs/heads/main'
